@@ -148,13 +148,13 @@ async function discordWebhookSend() {
     if (acc.name === '魚') color = 0xA627E4
 
     embedList.push({
-      title: `${acc.name} — Hoyolab 每日簽到`,
+      title: `${acc.name}`,
       description: acc.logs.join('\n'),
       color: color
     })
   }
 
-  // @user改在最底部
+  // @ user改在最底部
   const payload = {
     embeds: embedList,
     content: discordUser ? `\n<@${discordUser}>` : null
@@ -171,14 +171,14 @@ async function discordWebhookSend() {
   }
 }
 
-// ========== 主流程 ==========
+// main stuff
 if (!cookies || !cookies.length) throw new Error('COOKIE 未設定!')
 if (!games || !games.length) throw new Error('GAMES 未設定!')
 
 for (const index in cookies) {
   const name = Number(index) === 0 ? '魚' : Number(index) + 1
-  log('info', '##   正在替${name}登入')
-  log('info', '==========================')
+  log('info', `##   正在替${name}登入`)
+  log('info', '## ========================')
   await run(cookies[index], games[index])
 }
 
@@ -187,3 +187,4 @@ if (discordWebhook && URL.canParse(discordWebhook)) {
 }
 
 if (hasErrors) throw new Error('有錯誤!!!11!')
+
