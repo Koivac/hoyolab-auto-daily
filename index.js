@@ -156,7 +156,7 @@ async function discordWebhookSend() {
 
 
 for (const index in cookies) {
-  const name = Number(index) === 0 ? "魚" : `帳號 ${Number(index) + 1}`
+  const name = Number(index) === 0 ? "魚" : `## 帳號 ${Number(index) + 1}`
   log("info", `登入帳號：${name}`)
   await run(cookies[index], games[index])
 }
@@ -165,4 +165,4 @@ if (discordWebhook) {
   await discordWebhookSend()
 }
 
-if (hasErrors) throw new Error("有錯誤!!!")
+if (hasErrors) throw new Error("有錯誤!!!!11!!")
