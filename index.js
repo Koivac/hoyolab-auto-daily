@@ -43,7 +43,7 @@ function log(type, string) {
 }
 
 
-// -------------------- SIGN FUNCTION --------------------
+// SIGN FUNCTION
 async function run(cookie, gameList) {
   const list = gameList.split(' ')
 
@@ -97,7 +97,7 @@ async function run(cookie, gameList) {
 }
 
 
-// -------------------- DISCORD WEBHOOK --------------------
+// DC WEBHOOK
 async function discordWebhookSend() {
   const embeds = []
   let temp = []
@@ -153,7 +153,8 @@ async function discordWebhookSend() {
 }
 
 
-// -
+
+
 for (const index in cookies) {
   const name = Number(index) === 0 ? "魚" : `帳號 ${Number(index) + 1}`
   log("info", `登入帳號：${name}`)
