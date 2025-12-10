@@ -16,28 +16,31 @@ const endpoints = {
 
 // 中文遊戲名
 const gameNames = {
-  zzz: 'ZZZ',
-  gi: '原神',
-  hsr: '崩鐵',
-  hi3: '崩壞3rd',
-  tot: '未定事件簿'
+  zzz: '**ZZZ**',
+  gi: '**原神**',
+  hsr: '**崩鐵**',
+  hi3: '**崩壞3rd**',
+  tot: '**未定事件簿**'
 }
 
 // Account names with special styling
 const accountNames = {
   0: '魚',
-  1: '嘟嘟噠'
+  1: '宇'
 }
 
 const accountColors = {
-  0: null, // Default color for 魚
-  1: 0x4BD1FF // Blue color for 宇
+  0: 9537247, // Green for 魚
+  1: 0x4BD1FF  // Blue for 宇
 }
 
 let hasErrors = false
 let latestGames = []
 
-async function run(cookie, games) {
+// Store account-specific messages
+const accountMessages = {}
+
+async function run(cookie, games, accountIndex) {
   if (!games) {
     games = latestGames
   } else {
@@ -45,11 +48,16 @@ async function run(cookie, games) {
     latestGames = games
   }
 
+  // Initialize messages for this account
+  if (!accountMessages[accountIndex]) {
+    accountMessages[accountIndex] = []
+  }
+
   for (let game of games) {
     game = game.toLowerCase()
 
     if (!(game in endpoints)) {
-      log('error', `遊戲 ${game} 無效，可用遊戲: zzz, gi, hsr, hi3, tot`)
+      log('error', `遊戲 ${game} 無效，可用遊戲: zzz, gi, hsr, hi3, tot`, accountIndex)
       continue
     }
 
@@ -92,7 +100,7 @@ async function run(cookie, games) {
     }
 
     if (code in successCodes) {
-      log('info', `${gameNames[game]}：${successCodes[code]}`)
+      log('info', `${gameNames[game]}：${successCodes[code]}`, accountIndex)
       continue
     }
 
@@ -102,15 +110,16 @@ async function run(cookie, games) {
     }
 
     if (code in errorCodes) {
-      log('error', `${gameNames[game]}：${errorCodes[code]}`)
+      log('error', `${gameNames[game]}：${errorCodes[code]}`, accountIndex)
       continue
     }
 
-    log('error', `${gameNames[game]}：未知錯誤，請回報 Issues`)
+    log('error', `${gameNames[game]}：未知錯誤，請回報 Issues`, accountIndex)
   }
 }
 
 function log(type, ...data) {
+  const accountIndex = typeof data[data.length - 1] === 'number' ? data.pop() : null
   console[type](...data)
   if (type === 'error') hasErrors = true
   if (type === 'debug') return
@@ -120,71 +129,63 @@ function log(type, ...data) {
     .join(' ')
 
   messages.push({ type, string })
+  
+  // Also store in account-specific messages
+  if (accountIndex !== null) {
+    if (!accountMessages[accountIndex]) {
+      accountMessages[accountIndex] = []
+    }
+    accountMessages[accountIndex].push(string)
+  }
 }
 
 async function discordWebhookSend() {
-  let discordMsg = ""
-
-  if (discordUser) discordMsg = `<@${discordUser}>\n`
-
-  // Format messages with colors for Discord embed
-  const formattedMessages = messages.map(m => {
-    // Check if message contains account name
-    for (const [index, name] of Object.entries(accountNames)) {
-      if (m.string.includes(`帳號：${name}`)) {
-        const color = accountColors[index]
-        if (color) {
-          // Create Discord embed format
-          return {
-            embeds: [{
-              title: `帳號：${name}`,
-              color: color,
-              description: m.string.replace(`正在替帳號：${name} 登入`, '').trim() || '開始簽到...'
-            }]
-          }
-        }
+  const embeds = []
+  
+  // Create an embed for each account
+  for (const accountIndex in accountMessages) {
+    const accountNum = Number(accountIndex)
+    const accountName = accountNames[accountIndex] || `帳號${accountNum + 1}`
+    const accountColor = accountColors[accountIndex] || 0x808080 // Default gray
+    
+    const messages = accountMessages[accountIndex]
+    
+    if (messages && messages.length > 0) {
+      // Create description from all messages for this account
+      const description = messages.join('\n')
+      
+      const embed = {
+        title: `${accountName}`,
+        color: accountColor,
+        description: description,
+        timestamp: new Date().toISOString(),
       }
+      
+      embeds.push(embed)
     }
-    return m.string
+  }
+  
+  // Prepare the payload
+  const payload = {
+    content: discordUser ? `<@${discordUser}>`,
+    embeds: embeds
+  }
+  
+  console.log('Sending Discord webhook with embeds:', embeds.length, 'embeds')
+  
+  const res = await fetch(discordWebhook, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload)
   })
 
-  // Check if we have embeds
-  const hasEmbeds = formattedMessages.some(m => typeof m === 'object')
-  
-  if (hasEmbeds) {
-    // Send with embeds
-    const embeds = formattedMessages.filter(m => typeof m === 'object')
-    const plainMessages = formattedMessages.filter(m => typeof m === 'string')
-    
-    discordMsg += plainMessages.join('\n')
-    
-    const payload = {
-      content: discordMsg,
-      embeds: embeds.map(e => e.embeds[0])
-    }
-    
-    const res = await fetch(discordWebhook, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-
-    if (res.status !== 204) {
-      log('error', 'Discord webhook 發送失敗')
-    }
+  if (res.status !== 204) {
+    log('error', 'Discord webhook 發送失敗')
+    console.log('Response status:', res.status)
+    const responseText = await res.text()
+    console.log('Response:', responseText)
   } else {
-    // Original plain text method
-    discordMsg += messages.map(m => m.string).join('\n')
-    
-    const res = await fetch(discordWebhook, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: discordMsg })
-    })
-
-    if (res.status !== 204) {
-      log('error', 'Discord webhook 發送失敗')
-    }
+    console.log('Discord webhook sent successfully!')
   }
 }
 
@@ -192,11 +193,14 @@ async function discordWebhookSend() {
 if (!cookies || !cookies.length) throw new Error('COOKIE 未設定!')
 if (!games || !games.length) throw new Error('GAMES 未設定!')
 
+// Initialize accountMessages object
 for (const index in cookies) {
+  accountMessages[index] = []
+  
   // Get account name - use custom name if exists, otherwise use default 帳號X
   const name = accountNames[index] || `帳號${Number(index) + 1}`
-  log('info', `正在替帳號：${name} 登入`)
-  await run(cookies[index], games[index])
+  log('info', `正在替${name}登入`, Number(index))
+  await run(cookies[index], games[index], Number(index))
 }
 
 if (discordWebhook && URL.canParse(discordWebhook)) {
