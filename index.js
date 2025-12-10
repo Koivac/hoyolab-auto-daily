@@ -177,8 +177,8 @@ if (!games || !games.length) throw new Error('GAMES 未設定!')
 
 for (const index in cookies) {
   const name = Number(index) === 0 ? '魚' : Number(index) + 1
-  log('info', `##   正在替${name}登入`)
-  log('info', '==========================`)
+  log('info', '##   正在替${name}登入')
+  log('info', '==========================')
   await run(cookies[index], games[index])
 }
 
