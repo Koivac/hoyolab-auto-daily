@@ -26,7 +26,7 @@ const gameNames = {
 // Account names with special styling
 const accountNames = {
   0: '魚',
-  1: '宇'
+  1: '嘟嘟噠'
 }
 
 const accountColors = {
