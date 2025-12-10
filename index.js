@@ -128,7 +128,7 @@ async function discordWebhookSend() {
   if (res.status !== 204) {
     log('error', '## _Discord webhook 發送失敗 :(_')
   }
-
+}
 
 // ========== 主流程 ==========
 if (!cookies || !cookies.length) throw new Error('COOKIE 未設定!')
